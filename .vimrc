@@ -6,55 +6,69 @@ filetype off
 call plug#begin('~/.vim/plugged')
 
 Plug 'google/vim-maktaba'
+" code formatting
 Plug 'google/vim-codefmt'
 " Also add Glaive, which is used to configure codefmt's maktaba flags. See
 " " `:help :Glaive` for usage.
 Plug 'google/vim-glaive'
 
+" Coloring, themes, syntax highlights
+" " general
+Plug 'flazz/vim-colorschemes'
+Plug 'nanotech/jellybeans.vim'
+Plug 'crusoexia/vim-monokai'
 Plug 'altercation/vim-colors-solarized'
-Plug 'pangloss/vim-javascript'
+Plug 'nathanaelkane/vim-indent-guides'
+" " Web
 Plug 'ap/vim-css-color'
+Plug 'pangloss/vim-javascript'
 Plug 'groenewege/vim-less'
 Plug 'jelera/vim-javascript-syntax'
 Plug 'mustache/vim-mustache-handlebars'
-Plug 'tpope/vim-fugitive'
-Plug 'bling/vim-airline'
-Plug 'ctrlpvim/ctrlp.vim'
-Plug 'flazz/vim-colorschemes'
-Plug 'scrooloose/nerdtree'
-Plug 'nanotech/jellybeans.vim'
-Plug 'airblade/vim-gitgutter'
 Plug 'mxw/vim-jsx'
 Plug 'othree/yajs.vim'
 Plug 'othree/javascript-libraries-syntax.vim'
 Plug 'scrooloose/syntastic'
-Plug 'rking/ag.vim'
-Plug 'mileszs/ack.vim'
-
-Plug 'tmux-plugins/vim-tmux-focus-events'
-
+" " cpp
 Plug 'octol/vim-cpp-enhanced-highlight'
-
+" " swift
 Plug 'keith/swift.vim'
 Plug 'toyamarinyon/vim-swift'
-
+" " scala
 Plug 'derekwyatt/vim-scala'
-
+" " ruby
 Plug 'tpope/vim-rails'
 
-Plug 'justinmk/vim-sneak'
-
-Plug 'crusoexia/vim-monokai'
-
+" Information/status
+Plug 'tpope/vim-fugitive'
+Plug 'bling/vim-airline'
+Plug 'airblade/vim-gitgutter'
 Plug 'henrik/vim-indexed-search'
 
-Plug 'tpope/vim-obsession'
+" Navigation/Search
+Plug 'scrooloose/nerdtree'
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'rking/ag.vim'
+Plug 'mileszs/ack.vim'
+" " in-file
+Plug 'justinmk/vim-sneak'
 
-Plug 'nathanaelkane/vim-indent-guides'
+" TMUX
+Plug 'tmux-plugins/vim-tmux-focus-events'
 
- Plug 'Valloric/YouCompleteMe'
+" sessions
+Plug 'xolox/vim-misc'
+Plug 'xolox/vim-session'
+
+" Code completion + snippets
+Plug 'ervandew/supertab'
+Plug 'Valloric/YouCompleteMe'
 "Plug 'Shougo/deoplete.nvim'
 "Plug 'zchee/deoplete-clang'
+Plug 'MarcWeber/vim-addon-mw-utils'
+Plug 'tomtom/tlib_vim'
+Plug 'sirver/ultisnips'
+Plug 'honza/vim-snippets'
 
 call plug#end()
 
@@ -65,6 +79,7 @@ let g:ycm_global_ycm_extra_conf="/Users/kevingan/.ycm_extra_conf.py"
 let g:ycm_autoclose_preview_window_after_insertion = 1
 let g:ycm_extra_conf_vim_data=['&filetype']
 let g:indent_guides_enable_on_vim_startup = 1
+let g:session_autosave = 'no'
 
 set background=dark
 colorscheme solarized
@@ -82,11 +97,9 @@ set timeoutlen=900 ttimeoutlen=10
 inoremap <C-f> <C-x><C-f>
 inoremap <C-e> <C-o>$
 inoremap <C-b> <C-o>b
-inoremap <C-h> <C-o>h
-inoremap <C-j> <C-o>j
-inoremap <C-k> <C-o>k
-inoremap <C-l> <C-o>l
 inoremap <C-i> <C-x><C-i>
+inoremap <C-j> <Esc>a<C-R>=snipMate#TriggerSnippet()<CR>
+" nnoremap <C-j> a<C-R>=snipMate#TriggerSnippet()<CR>
 
 map! kj <ESC>
 nmap <C-n> :NERDTreeToggle<CR>
@@ -130,6 +143,7 @@ set relativenumber
 set number
 
 set autoindent
+
 filetype plugin indent on
 "javascript concealments
 set conceallevel=1
@@ -150,7 +164,13 @@ set cinoptions+=:0
 
 let g:syntastic_javascript_checkers = ['eslint', 'swiftpm', 'swiftlint']
 
-let g:ycm_key_invoke_completion = '<C-n>'
+let g:SuperTabDefaultCompletionType    = '<C-n>'
+let g:SuperTabCrMapping                = 0
+let g:UltiSnips                        = '<tab>'
+let g:UltiSnipsJumpForwardTrigger      = '<tab>'
+let g:UltiSnipsJumpBackwardTrigger     = '<s-tab>'
+let g:ycm_key_list_select_completion   = ['<C-j>', '<C-n>', '<Down>']
+let g:ycm_key_list_previous_completion = ['<C-k>', '<C-p>', '<Up>']
 nnoremap gd :YcmCompleter GoToDefinitionElseDeclaration<CR>
 let g:ycm_key_detailed_diagnostics = '<leader>d'
 
@@ -174,6 +194,55 @@ if has("mouse_sgr")
 else
   set ttymouse=xterm2
 end
+
+""""""""""""""""""""""" INDENTATION HELPER
+" Jump to the next or previous line that has the same level or a lower
+" level of indentation than the current line.
+"
+" exclusive (bool): true: Motion is exclusive
+" false: Motion is inclusive
+" fwd (bool): true: Go to next line
+" false: Go to previous line
+" lowerlevel (bool): true: Go to line with lower indentation level
+" false: Go to line with the same indentation level
+" skipblanks (bool): true: Skip blank lines
+" false: Don't skip blank lines
+function! NextIndent(exclusive, fwd, lowerlevel, skipblanks)
+  let line = line('.')
+  let column = col('.')
+  let lastline = line('$')
+  let indent = indent(line)
+  let stepvalue = a:fwd ? 1 : -1
+  while (line > 0 && line <= lastline)
+    let line = line + stepvalue
+    if ( ! a:lowerlevel && indent(line) == indent ||
+          \ a:lowerlevel && indent(line) < indent)
+      if (! a:skipblanks || strlen(getline(line)) > 0)
+        if (a:exclusive)
+          let line = line - stepvalue
+        endif
+        exe line
+        exe "normal " column . "|"
+        return
+      endif
+    endif
+  endwhile
+endfunction
+
+" Moving back and forth between lines of same or lower indentation.
+nnoremap <silent> [l :call NextIndent(0, 0, 0, 1)<CR>
+nnoremap <silent> ]l :call NextIndent(0, 1, 0, 1)<CR>
+nnoremap <silent> [L :call NextIndent(0, 0, 1, 1)<CR>
+nnoremap <silent> ]L :call NextIndent(0, 1, 1, 1)<CR>
+vnoremap <silent> [l <Esc>:call NextIndent(0, 0, 0, 1)<CR>m'gv''
+vnoremap <silent> ]l <Esc>:call NextIndent(0, 1, 0, 1)<CR>m'gv''
+vnoremap <silent> [L <Esc>:call NextIndent(0, 0, 1, 1)<CR>m'gv''
+vnoremap <silent> ]L <Esc>:call NextIndent(0, 1, 1, 1)<CR>m'gv''
+onoremap <silent> [l :call NextIndent(0, 0, 0, 1)<CR>
+onoremap <silent> ]l :call NextIndent(0, 1, 0, 1)<CR>
+onoremap <silent> [L :call NextIndent(1, 0, 1, 1)<CR>
+onoremap <silent> ]L :call NextIndent(1, 1, 1, 1)<CR>
+""""""""""""""""" END INDENTATION HELPER
 
 "" OneDark color support
 ""Use 24-bit (true-color) mode in Vim/Neovim when outside tmux.
