@@ -1,5 +1,4 @@
 set shell=/bin/sh
-set clipboard=unnamed
 set nocompatible
 filetype off
 
@@ -106,13 +105,13 @@ nmap <C-n> :NERDTreeToggle<CR>
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 nmap <leader>k ?^\S<CR>
 nmap <leader>j /^\S<CR>
-nmap <leader>e :edit %%
-nmap <leader>v :view %%
+" paste from system clipboard
+nmap <leader>v "*p
 nmap <leader><leader> <c-^>
 nmap <leader>n :NERDTreeFind<CR>
 "Toggle ignore case
 nmap <leader>i :set ic!<CR>
-nnoremap <buffer> <leader>c :edit %:h/BUILD<CR>
+nnoremap <leader>b :edit %:h/BUILD<CR>
 "nnoremap <leader>f <C-P><C-\>w
 nnoremap <leader>p :set invpaste paste?<CR>
 "splitting
@@ -131,6 +130,7 @@ let &t_SI = "\<Esc>]50;CursorShape=1\x7"
 let &t_EI = "\<Esc>]50;CursorShape=0\x7"
 highlight Cursor guifg=white guibg=black
 highlight iCursor guifg=white guibg=steelblue
+highlight LineNr ctermfg=red
 let g:indent_guides_auto_colors = 0
 hi IndentGuidesOdd ctermbg=black
 hi IndentGuidesEven ctermbg=green
@@ -166,7 +166,7 @@ let g:syntastic_javascript_checkers = ['eslint', 'swiftpm', 'swiftlint']
 
 let g:SuperTabDefaultCompletionType    = '<C-n>'
 let g:SuperTabCrMapping                = 0
-let g:UltiSnips                        = '<tab>'
+let g:UltiSnipsExpandTrigger           = '<tab>'
 let g:UltiSnipsJumpForwardTrigger      = '<tab>'
 let g:UltiSnipsJumpBackwardTrigger     = '<s-tab>'
 let g:ycm_key_list_select_completion   = ['<C-j>', '<C-n>', '<Down>']

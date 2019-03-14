@@ -17,6 +17,26 @@ set -x CLOSURE_LIBRARY "/Users/kevingan/libs/closure-library"
 set -x CXX "/usr/local/opt/llvm/bin/clang++"
 set -x CC "/usr/local/opt/llvm/bin/clang"
 
+# @ deepmap only
+set -x DM_ALIGN "/mnt/users/kevingan/data/global_alignment"
+function lsalign
+  ls $DM_ALIGN/alignment_"$argv[1]"
+end
+function lsaligns3 
+  aws s3 ls s3://deepmap-pipeline-prod/pose_output/alignment_"$argv[1]"/
+end
+function dmalign -a alignmentId poseGraphName
+  set -q poseGraphName[1]; or set poseGraphName "pose_graph_opt.bin"
+  ~/deepmap_viewers/ManualAlignment.app/Contents/MacOS/ManualAlignment --input_pose_graph "$DM_ALIGN/alignment_$alignmentId/$poseGraphName"
+end
+function downloadalign -a alignmentId poseGraphName
+  set -q poseGraphName[1]; or set poseGraphName "pose_graph_opt.bin"
+  set local_path "/mnt/users/kevingan/data/global_alignment/alignment_$alignmentId"
+  mkdir -m 777 "$local_path"
+  aws s3 cp "s3://deepmap-pipeline-prod/pose_output/alignment_$alignmentId/$poseGraphName" "$local_path"
+end
+
+
 # eval "docker-machine env default"
 
 function h_
@@ -72,7 +92,7 @@ alias hstop="/usr/local/Cellar/hadoop/2.8.0/sbin/stop-dfs.sh; and /usr/local/Cel
 # git
 alias gs='clear ;and git status'
 alias gb='git branch'
-alias gbhist='git reflog | grep checkout | grep -v \'rebase\''
+alias gbhist='git reflog --date=iso | grep checkout | grep -v \'rebase\''
 alias gbranch='git rev-parse --abbrev-ref HEAD' 
 alias gl="clear ;and git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 abbr -a gdt="git diff-tree --no-commit-id --name-only -r "
@@ -135,7 +155,7 @@ end
 
 # diff minus certain stuff
 function gd_except
-  git diff $argv[0]..$argv[1] --name-only | grep -v $argv[2] | xargs git $argv[3] $argv[0]..$argv[1] --
+  git diff $argv[1]..$argv[2] --name-only | grep -v $argv[3] | xargs git $argv[4] $argv[1]..$argv[2] --
 end
 
 # difftool
